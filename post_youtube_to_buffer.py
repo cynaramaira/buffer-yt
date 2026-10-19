@@ -32,12 +32,13 @@ def send_to_buffer(text):
         "Content-Type": "application/json"
     }
 
+    # Query corrigida com os tipos e enums exatos da API do Buffer
     mutation = """
-    mutation CreateSinglePost($channelId: ID!, $text: String!) {
+    mutation CreateSinglePost($channelId: ChannelId!, $text: String!) {
       createPost(input: {
         channelId: $channelId
         text: $text
-        schedulingType: shareNow
+        mode: shareNow
       }) {
         ... on PostActionSuccess {
           post {
@@ -45,7 +46,7 @@ def send_to_buffer(text):
             status
           }
         }
-        ... on UserError {
+        ... on Error {
           message
         }
       }
@@ -67,7 +68,11 @@ def send_to_buffer(text):
             if errors:
                 print(f"Erro GraphQL no canal {channel_id}: {errors}")
             else:
-                print(f"Publicação enviada com sucesso ao canal {channel_id}.")
+                data = res_data.get("data", {}).get("createPost", {})
+                if "message" in data:
+                    print(f"Erro retornado pelo Buffer no canal {channel_id}: {data['message']}")
+                else:
+                    print(f"Publicação enviada com sucesso ao canal {channel_id}.")
         else:
             print(f"Falha HTTP no canal {channel_id}: {response.status_code} - {response.text}")
 
@@ -94,7 +99,7 @@ def main():
     if video_id != last_id:
         print(f"Novo vídeo detectado: {video_title}")
         
-        # Limite seguro para não estourar os 280 caracteres do X
+        # Limite seguro para não estourar a contagem de caracteres do X
         if len(video_title) > 200:
             video_title = video_title[:197] + "..."
             
