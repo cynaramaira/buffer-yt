@@ -32,12 +32,12 @@ def send_to_buffer(text):
         "Content-Type": "application/json"
     }
 
-    # Query corrigida com os tipos e enums exatos da API do Buffer
     mutation = """
     mutation CreateSinglePost($channelId: ChannelId!, $text: String!) {
       createPost(input: {
         channelId: $channelId
         text: $text
+        schedulingType: automatic
         mode: shareNow
       }) {
         ... on PostActionSuccess {
@@ -46,7 +46,7 @@ def send_to_buffer(text):
             status
           }
         }
-        ... on Error {
+        ... on MutationError {
           message
         }
       }
@@ -90,7 +90,6 @@ def main():
 
     last_id = get_last_posted_id()
 
-    # Na primeira execução salva a referência e não dispara publicações antigas
     if not last_id:
         print("Primeira execução: gravando o último vídeo atual como referência.")
         save_last_posted_id(video_id)
@@ -99,7 +98,6 @@ def main():
     if video_id != last_id:
         print(f"Novo vídeo detectado: {video_title}")
         
-        # Limite seguro para não estourar a contagem de caracteres do X
         if len(video_title) > 200:
             video_title = video_title[:197] + "..."
             
